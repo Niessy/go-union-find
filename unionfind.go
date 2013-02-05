@@ -1,88 +1,102 @@
 // This is a basic implementation
 // of the Union Find Data Structure.
-package unionfind
 
-// Minimal Cluster structure
-type Cluster struct {
-	leader *Cluster    // pointer to leader Cluster
+package gofind
+
+// Set structure
+type Set struct {
+	leader *Set        // pointer to leader Cluster
 	rank   int         // rank of the cluster
 	data   interface{} // whatever you're trying to compute with 
 }
 
-// Create a Cluster given data, this can be any type.
-func NewCluster(d interface{}) *Cluster {
-	nc := new(Cluster)
-	nc.rank = 0
-	nc.leader = nc
-	nc.data = d
-	return nc
+// Create a Set given data, this can be any type.
+func makeSet(d interface{}) *Set {
+	ns := new(Set)
+	ns.rank = 0
+	ns.leader = ns
+	ns.data = d
+	return ns
 }
 
-// A slice of Cluster structs
-type ClusterGroup []*Cluster
+// A slice of Set structs
+type Sets map[interface{}]*Set
 
-// Returns length of ClusterGroup
-func (c ClusterGroup) Len() int {
+// Returns length of Sets
+func (c Sets) Len() int {
 	return len(c)
 }
 
 type compareFunc func(a, b interface{}) bool
 
-// Contains ClusterGroup, count (number of Clusters) and
+// Contains Sets, count (number of Clusters) and
 // the comparison function for the data in the Clusters.
-type Clustering struct {
-	AllClusters ClusterGroup
-	count       int         // count of current seperated Clusters
-	compare     compareFunc // function to compare Data
+type SetSpace struct {
+	setMap  Sets
+	count   int         // count of current seperated Clusters
+	compare compareFunc // function to compare Data
 }
 
-// Generates a Clustering with a Clusters 
-// based on the passed Data and compareFunc
-func GenerateClustering(data []interface{}, cf compareFunc) *Clustering {
-	clusterGroup := make(ClusterGroup, len(data))
-	for i, d := range data {
-		nc := NewCluster(d)
-		clusterGroup[i] = nc
+// Create a Set Space, this will contains the comparison function,
+// the number of sets(that haven't been unioned!) and the sets.
+func MakeSetSpace(cf compareFunc) *SetSpace {
+	return &SetSpace{
+		setMap:  make(Sets),
+		count:   0,
+		compare: cf,
 	}
-	clustering := &Clustering{
-		AllClusters: clusterGroup,
-		count:       clusterGroup.Len(),
-		compare:     cf,
-	}
-	return clustering
+}
+
+// If there is no set present with the name then it will create
+// a new set and add it to the SetSpace, else it will override the
+// previous set assigned to said name.
+func (ss *SetSpace) AddorUpdateSet(name, data interface{}) {
+	x0 := *ss
+	ns := makeSet(data)
+	x0.setMap[name] = ns
+	x0.count++
+	*ss = x0
+	return
 }
 
 //Returns the number of Clusters
-func (c Clustering) Count() int {
-	return c.count
+func (ss SetSpace) Count() int {
+	return ss.count
+}
+
+//Returns the Sets map contained in the SetSpace
+func (ss SetSpace) GetSetMap() Sets {
+	return ss.setMap
 }
 
 // Find the leader of a Cluster
 // Uses path compression so the Operation runs
 // in amortized O(alpha(n)) where alpha is 
 // the inverse Ackermann function
-func (clus Clustering) Find(c *Cluster) *Cluster {
-	if c.leader != c {
-		c.leader = clus.Find(c.leader)
+func (ss SetSpace) Find(s *Set) *Set {
+	if s.leader != s {
+		s.leader = ss.Find(s.leader)
 	}
-	return c.leader
+	return s.leader
 }
 
-// Unions two Cluster structs, the Cluster with the highest rank
+// Unions two Set structs, the Set with the highest rank
 // is chosen for leadership.
-func (clus *Clustering) Union(c, d *Cluster) {
-	// find the leaders of c and d clusters
-	c1 := *clus
-	x1 := c1.Find(c)
-	x2 := c1.Find(d)
-	// Already in the same cluster
+func (ss *SetSpace) Union(a, b interface{}) {
+	// find the leaders of s1 and s2 Sets
+	s1 := ss.setMap[a]
+	s2 := ss.setMap[b]
+	c1 := *ss
+	x1 := c1.Find(s1)
+	x2 := c1.Find(s2)
+	// Already in the same Set
 	if x2 == x1 {
 		return
 	}
 	a1 := *x1
 	a2 := *x2
 
-	// Merge based on rank of Cluster
+	// Merge based on rank of Set
 	if a1.rank < a2.rank {
 		a1.leader = a2.leader
 	} else if a1.rank > a2.rank {
@@ -94,15 +108,17 @@ func (clus *Clustering) Union(c, d *Cluster) {
 	*x1 = a1
 	*x2 = a2
 	c1.count -= 1
-	*clus = c1
+	*ss = c1
 	return
 }
 
-// Takes two Cluster structs, works like Union except that
+// Takes two Set structs, works like Union except that
 // the predefined compareFunc is used to determine if 
-// the two Cluster should Union.
-func (clus *Clustering) UnionbyCompare(c, d *Cluster) {
-	if clus.compare(c.data, d.data) == true {
-		clus.Union(c, d)
+// the two Set should Union.
+func (ss *SetSpace) UnionbyCompare(a, b interface{}) {
+	s1 := ss.setMap[a]
+	s2 := ss.setMap[b]
+	if ss.compare(s1.data, s2.data) == true {
+		ss.Union(a, b)
 	}
 }

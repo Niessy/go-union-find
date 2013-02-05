@@ -1,6 +1,7 @@
-package unionfind
+package gofind
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -8,51 +9,42 @@ func intCompare(a, b interface{}) bool {
 	return a.(int) < b.(int)
 }
 
-func clusterOfInts(n int) []interface{} {
-	d := make([]interface{}, n)
-	for i := 0; i < n; i++ {
-		d[i] = i
-	}
-	return d
-}
-
 type T struct {
 	u, v, x int
 }
 
-func TestGenerateClustering(t *testing.T) {
-	d := []interface{}{1, 2, 3, 4}
-	c := GenerateClustering(d, intCompare)
-	if c.Count() != len(d) {
-		t.Errorf("Clustering should have %d Clusters, instead has %d.\n", len(d), c.Count())
-	}
-	cMap := make(map[*Cluster]int)
-	for _, cluster := range c.AllClusters {
-		cMap[cluster] = 0
-	}
-
-	if len(cMap) != len(d) {
-		t.Errorf("Clustering should have %d leaders, instead has %d.\n", len(d), len(cMap))
+func TestMakeSetSpace(t *testing.T) {
+	ss := MakeSetSpace(intCompare)
+	ss.AddorUpdateSet("first", 10)
+	ss.AddorUpdateSet("second", 5)
+	ss.AddorUpdateSet("third", 50)
+	ss.AddorUpdateSet("fourth", 22)
+	if ss.Count() != 4 {
+		t.Errorf("SetSpace count should be 4 instead it's %d.\n", ss.Count())
 	}
 }
 
 func TestFindAndUnion(t *testing.T) {
-	d := []interface{}{1, 2, 3, 4, 5, 6, 7, 8}
-	c := GenerateClustering(d, intCompare)
-	c.UnionbyCompare(c.AllClusters[0], c.AllClusters[1])
-	c.UnionbyCompare(c.AllClusters[2], c.AllClusters[3])
-	c.UnionbyCompare(c.AllClusters[4], c.AllClusters[5])
-	c.UnionbyCompare(c.AllClusters[6], c.AllClusters[7])
-	if c.Count() != 4 {
-		t.Errorf("Should have 4 leaders, instead has %d.\n", c.Count())
+	ss := MakeSetSpace(intCompare)
+	ss.AddorUpdateSet("first", 10)
+	ss.AddorUpdateSet("second", 5)
+	ss.AddorUpdateSet("third", 50)
+	ss.AddorUpdateSet("fourth", 22)
+	ss.UnionbyCompare("first", "third")
+	if ss.Count() != 3 {
+		t.Errorf("SetSpace count should be 3 instead it's %d.\n", ss.Count())
 	}
-	c.UnionbyCompare(c.AllClusters[1], c.AllClusters[2])
-	c.UnionbyCompare(c.AllClusters[5], c.AllClusters[6])
-	if c.Count() != 2 {
-		t.Errorf("Should have 2 leaders, instead has %d.\n", c.Count())
+	setMap := ss.GetSetMap()
+	first := setMap["first"]
+	second := setMap["second"]
+	third := setMap["third"]
+	if first.leader != third.leader {
+		t.Errorf("first should have same leader as third, first leader %v, third leader %v.\n",
+			first.leader, third.leader)
 	}
-	c.UnionbyCompare(c.AllClusters[0], c.AllClusters[7])
-	if c.Count() != 1 {
-		t.Errorf("Should have 1 leaders, instead has %d.\n", c.Count())
+	ss.UnionbyCompare("second", "third")
+	if second.leader != third.leader {
+		t.Errorf("second should have same leader as third, second leader %v, third leader %v.\n",
+			second.leader, third.leader)
 	}
 }
