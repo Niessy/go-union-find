@@ -5,7 +5,6 @@ I've used it for help with Coursera Algorithms Part 2 programming assignments an
 
 Short example of using the package:
 
-  <code>
   
     type Point struct {
         x,y float32
@@ -32,7 +31,6 @@ Short example of using the package:
         // by using ss.Union("first", "second")
     }
     
-  </code>
     
     
     
