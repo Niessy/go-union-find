@@ -1,7 +1,6 @@
 package gofind
 
 import (
-	"fmt"
 	"testing"
 )
 

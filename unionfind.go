@@ -73,9 +73,9 @@ func (ss SetSpace) GetSetMap() Sets {
 // Uses path compression so the Operation runs
 // in amortized O(alpha(n)) where alpha is 
 // the inverse Ackermann function
-func (ss SetSpace) Find(s *Set) *Set {
+func (ss *SetSpace) find(s *Set) *Set {
 	if s.leader != s {
-		s.leader = ss.Find(s.leader)
+		s.leader = ss.find(s.leader)
 	}
 	return s.leader
 }
@@ -86,9 +86,9 @@ func (ss *SetSpace) Union(a, b interface{}) {
 	// find the leaders of s1 and s2 Sets
 	s1 := ss.setMap[a]
 	s2 := ss.setMap[b]
-	c1 := *ss
-	x1 := c1.Find(s1)
-	x2 := c1.Find(s2)
+	c1 := ss
+	x1 := c1.find(s1)
+	x2 := c1.find(s2)
 	// Already in the same Set
 	if x2 == x1 {
 		return
@@ -108,7 +108,6 @@ func (ss *SetSpace) Union(a, b interface{}) {
 	*x1 = a1
 	*x2 = a2
 	c1.count -= 1
-	*ss = c1
 	return
 }
 
